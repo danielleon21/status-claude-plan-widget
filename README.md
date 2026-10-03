@@ -3,7 +3,7 @@
 Muestra en la barra inferior de Claude Code cuánto llevas usado de tu plan:
 
 ```
-[Claude] Pro | 5h: 23% (reset 15:40) | Semana: 41% (reset 10-08 14:00) | 13:45
+[Claude] Pro | Contexto: 13% (127k/1M) | 5h: 23% (reset 15:40) | Semana: 41% (reset 10-08 14:00) | 13:45
 ```
 
 ## Requisitos

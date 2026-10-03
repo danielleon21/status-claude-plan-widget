@@ -41,14 +41,18 @@ async function main(): Promise<string> {
   const sevenDay = fresh.sevenDay ?? (isCacheValid(cached?.sevenDay, now) ? cached?.sevenDay : undefined);
   const hasFresh = !!(fresh.fiveHour || fresh.sevenDay);
 
-  if (!fiveHour && !sevenDay) {
+  const context = fresh.context;
+
+  if (!fiveHour && !sevenDay && !context) {
     return renderWarning('Sin datos de límites todavía (llegan tras la primera respuesta)');
   }
 
-  const lastUpdated = hasFresh ? now : cached!.lastUpdated;
+  // Sin límites (ni frescos ni en caché) no hay nada viejo que marcar: solo se muestra el contexto.
+  const stale = !hasFresh && !!(fiveHour || sevenDay);
+  const lastUpdated = stale ? cached!.lastUpdated : now;
   if (hasFresh) saveCache(config.cacheDir, { fiveHour, sevenDay, lastUpdated });
 
-  return renderStatusLine({ plan: config.plan, fiveHour, sevenDay, lastUpdated }, !hasFresh, now);
+  return renderStatusLine({ plan: config.plan, context, fiveHour, sevenDay, lastUpdated }, stale, now);
 }
 
 main()

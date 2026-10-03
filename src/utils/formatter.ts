@@ -1,4 +1,4 @@
-import { RateWindow, UsageSnapshot } from '../types';
+import { ContextUsage, RateWindow, UsageSnapshot } from '../types';
 
 const RESET = '\x1b[0m';
 const DIM = '\x1b[2m';
@@ -10,6 +10,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 export function formatPercentage(percentage: number): string {
   return `${Math.round(percentage)}%`;
+}
+
+/** 1_000_000 -> "1M", 126_736 -> "127k", 850 -> "850". */
+export function formatTokens(tokens: number): string {
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (tokens >= 1_000) return `${Math.round(tokens / 1_000)}k`;
+  return String(tokens);
 }
 
 /** Fecha local en formato YYYY-MM-DD. */
@@ -44,14 +51,20 @@ function renderWindow(label: string, window: RateWindow | undefined, now: Date):
   return `${label}: ${pct} ${DIM}(reset ${formatReset(window.resetsAt, now)})${RESET}`;
 }
 
+function renderContext(context: ContextUsage): string {
+  const pct = `${getColorCode(context.usedPercentage)}${formatPercentage(context.usedPercentage)}${RESET}`;
+  return `Contexto: ${pct} ${DIM}(${formatTokens(context.usedTokens)}/${formatTokens(context.size)})${RESET}`;
+}
+
 /**
- * [Claude] Pro | 5h: 23% (reset 15:40) | Semana: 41% (reset 10-08 14:00) | 13:45
+ * [Claude] Pro | Contexto: 13% (127k/1M) | 5h: 23% (reset 15:40) | Semana: 41% (reset 10-08 14:00) | 13:45
  * Con `stale`, la hora se marca con ⚠: el dato viene de caché, no de esta sesión.
  */
 export function renderStatusLine(usage: UsageSnapshot, stale = false, now: Date = new Date()): string {
   const updated = `${stale ? '⚠ ' : ''}${formatTime(usage.lastUpdated)}`;
   return [
     `[Claude] ${capitalize(usage.plan)}`,
+    ...(usage.context ? [renderContext(usage.context)] : []),
     renderWindow('5h', usage.fiveHour, now),
     renderWindow('Semana', usage.sevenDay, now),
     `${DIM}${updated}${RESET}`,

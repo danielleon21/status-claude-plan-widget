@@ -1,13 +1,15 @@
-import { RateWindow, StatusLineInput } from '../types';
+import { ContextUsage, RateWindow, StatusLineInput } from '../types';
 import { logger } from '../utils/logger';
 
 // Claude Code incluye en el JSON de la status line los límites reales del plan
 // (rate_limits.five_hour y rate_limits.seven_day) para suscriptores Pro y Max, a partir de
 // la primera respuesta de la sesión. Cada ventana puede faltar por separado.
+// También incluye context_window, con lo que ocupa el contexto de la sesión actual.
 
 export interface RateLimits {
   fiveHour?: RateWindow;
   sevenDay?: RateWindow;
+  context?: ContextUsage;
 }
 
 function parseWindow(raw: { used_percentage?: number; resets_at?: number } | undefined): RateWindow | undefined {
@@ -15,7 +17,19 @@ function parseWindow(raw: { used_percentage?: number; resets_at?: number } | und
   return { usedPercentage: raw.used_percentage, resetsAt: new Date(raw.resets_at * 1000) };
 }
 
-/** Extrae las ventanas del JSON de stdin. Texto vacío o inválido = sin datos. */
+function parseContext(raw: StatusLineInput['context_window']): ContextUsage | undefined {
+  const size = raw?.context_window_size;
+  const pct = raw?.used_percentage;
+  // used_percentage llega null hasta la primera llamada a la API de la sesión.
+  if (typeof size !== 'number' || size <= 0 || typeof pct !== 'number') return undefined;
+  const u = raw?.current_usage;
+  const usedTokens = u
+    ? (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0)
+    : Math.round((pct / 100) * size);
+  return { usedPercentage: pct, usedTokens, size };
+}
+
+/** Extrae las ventanas y el contexto del JSON de stdin. Texto vacío o inválido = sin datos. */
 export function parseRateLimits(stdin: string): RateLimits {
   if (!stdin.trim()) return {};
   let input: StatusLineInput;
@@ -28,6 +42,7 @@ export function parseRateLimits(stdin: string): RateLimits {
   return {
     fiveHour: parseWindow(input.rate_limits?.five_hour),
     sevenDay: parseWindow(input.rate_limits?.seven_day),
+    context: parseContext(input.context_window),
   };
 }
 
