@@ -1,0 +1,27 @@
+{
+  "name": "warp-token-monitor",
+  "version": "1.0.0",
+  "description": "Token usage monitor for the Claude Code status line (Warp Terminal)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "setup": "node dist/setup.js",
+    "setup:remove": "node dist/setup.js --uninstall",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "tsc --watch"
+  },
+  "private": true,
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
